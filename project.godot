@@ -6,34 +6,19 @@
 ;   [section] ; section goes between []
 ;   param=value ; assign values to parameters
 
-config_version=4
-
-_global_script_classes=[ {
-"base": "Spatial",
-"class": "SceneMap",
-"language": "GDScript",
-"path": "res://addons/scene_map/scene_map.gd"
-}, {
-"base": "Resource",
-"class": "ScenePalette",
-"language": "GDScript",
-"path": "res://addons/scene_map/scene_palette.gd"
-} ]
-_global_script_class_icons={
-"SceneMap": "res://addons/scene_map/scene_map.svg",
-"ScenePalette": "res://addons/scene_map/scene_palette.svg"
-}
+config_version=5
 
 [application]
 
 config/name="SceneMap"
 run/main_scene="res://test_level.tscn"
+config/features=PackedStringArray("4.5")
 config/icon="res://icon.png"
 
 [editor_plugins]
 
-enabled=PoolStringArray( "scene_map" )
+enabled=PackedStringArray("res://addons/scene_map/plugin.cfg")
 
 [rendering]
 
-environment/default_environment="res://default_env.tres"
+environment/defaults/default_environment="res://default_env.tres"

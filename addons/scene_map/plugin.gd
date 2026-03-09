@@ -1,4 +1,4 @@
-tool
+@tool
 extends EditorPlugin
 
 
@@ -21,7 +21,7 @@ func _enter_tree() -> void:
 	scene_palette_inspector = ScenePaletteInspector.new();
 	add_inspector_plugin(scene_palette_inspector);
 	
-	scene_map_editor = preload("editor/scene_map_editor.tscn").instance();
+	scene_map_editor = preload("editor/scene_map_editor.tscn").instantiate();
 	scene_map_editor.plugin = self;
 	add_control_to_container(EditorPlugin.CONTAINER_SPATIAL_EDITOR_SIDE_RIGHT, scene_map_editor);
 	scene_map_editor.hide();
@@ -40,17 +40,17 @@ func _exit_tree() -> void:
 	#remove_custom_type("SceneMap");
 
 
-func edit(object: Object) -> void:
+func _edit(object: Object) -> void:
 	if object is SceneMap:
 		scene_map_editor.edit(object);
 		scene_map_editor.show();
 
 
-func handles(object: Object) -> bool:
+func _handles(object: Object) -> bool:
 	return object is SceneMap;
 
 
-func make_visible(visible: bool) -> void:
+func _make_visible(visible: bool) -> void:
 	if visible:
 		scene_map_editor.show();
 	else:
@@ -58,5 +58,5 @@ func make_visible(visible: bool) -> void:
 		scene_map_editor.hide();
 
 
-func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
+func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 	return scene_map_editor.handle_spatial_input(camera, event);

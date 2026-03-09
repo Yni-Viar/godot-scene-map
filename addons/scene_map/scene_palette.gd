@@ -1,5 +1,6 @@
-tool
-class_name ScenePalette, "scene_palette.svg"
+@tool
+@icon("scene_palette.svg")
+class_name ScenePalette
 extends Resource
 
 
@@ -11,7 +12,7 @@ func _init() -> void:
 	resource_name = "ScenePalette";
 
 
-func _set(property: String, value) -> bool:
+func _set(property: StringName, value) -> bool:
 	if property.begins_with("items/"):
 		var parts := property.split("/");
 		if parts.size() != 3:
@@ -37,7 +38,7 @@ func _set(property: String, value) -> bool:
 	return false;
 
 
-func _get(property: String):
+func _get(property: StringName):
 	if property.begins_with("items/"):
 		var parts := property.split("/");
 		if parts.size() != 3:
@@ -177,14 +178,14 @@ func clear() -> void:
 
 
 func get_next_available_id() -> int:
-	if item_map.empty():
+	if item_map.is_empty():
 		return 0;
 	else:
 		return item_map.size();
 
 
 func _emit_changed():
-	property_list_changed_notify();
+	notify_property_list_changed();
 	emit_changed();
 
 

@@ -1,4 +1,4 @@
-tool
+@tool
 extends Control
 
 
@@ -32,12 +32,12 @@ enum MenuOption {
 
 var plugin: EditorPlugin;
 var scene_map: SceneMap;
-var cursor: Spatial;
+var cursor: Node3D;
 var cursor_origin: Vector3;
 var cursor_rotation: Basis;
 var edit_axis: int = Vector3.AXIS_Y;
 var edit_floor: int = 0;
-var edit_grid: MeshInstance;
+var edit_grid: MeshInstance3D;
 var selected_item_id: int = -1;
 var current_input_action: int = InputAction.None;
 var changed_items: Array = [];
@@ -45,14 +45,14 @@ var display_mode: int = PaletteDisplayMode.Thumbnail;
 var search_text: String = "";
 
 
-onready var palette_list := $Palette as ItemList;
-onready var no_palette_warning := $NoPaletteWarning as Label;
-onready var floor_label := $Toolbar/FloorLabel as Label;
-onready var floor_control := $Toolbar/FloorBox as SpinBox;
-onready var menu := $Toolbar/MenuButton as MenuButton;
-onready var search_box := $SearchBar/Search as LineEdit;
-onready var thumbnail_button := $SearchBar/Thumbnail as Button;
-onready var list_button := $SearchBar/List as Button;
+@onready var palette_list := $Palette as ItemList;
+@onready var no_palette_warning := $NoPaletteWarning as Label;
+@onready var floor_label := $Toolbar/FloorLabel as Label;
+@onready var floor_control := $Toolbar/FloorBox as SpinBox;
+@onready var menu := $Toolbar/MenuButton as MenuButton;
+@onready var search_box := $SearchBar/Search as LineEdit;
+@onready var thumbnail_button := $SearchBar/Thumbnail as Button;
+@onready var list_button := $SearchBar/List as Button;
 
 
 func _enter_tree() -> void:
@@ -70,13 +70,13 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
-	thumbnail_button.icon = get_icon("FileThumbnail", "EditorIcons");
-	list_button.icon = get_icon("FileList", "EditorIcons");
-	search_box.right_icon = get_icon("Search", "EditorIcons");
+	thumbnail_button.icon = EditorInterface.get_editor_theme().get_icon("FileThumbnail", "EditorIcons");
+	list_button.icon = EditorInterface.get_editor_theme().get_icon("FileList", "EditorIcons");
+	search_box.right_icon = EditorInterface.get_editor_theme().get_icon("Search", "EditorIcons");
 	
 	# Menu setup (can't be done in scene)
 	var menu_popup := menu.get_popup();
-	menu_popup.connect("id_pressed", self, "_menu_option_selected");
+	menu_popup.connect("id_pressed", Callable(self, "_menu_option_selected"));
 	menu_popup.set_item_accelerator(menu_popup.get_item_index(MenuOption.PreviousLevel), KEY_Q);
 	menu_popup.set_item_accelerator(menu_popup.get_item_index(MenuOption.NextLevel), KEY_E);
 	menu_popup.set_item_accelerator(menu_popup.get_item_index(MenuOption.EditAxis_X), KEY_X);
@@ -89,33 +89,33 @@ func _ready() -> void:
 
 func edit(p_scene_map: SceneMap) -> void:
 	if scene_map:
-		if scene_map.is_connected("palette_changed", self, "_update_palette"):
-			scene_map.disconnect("palette_changed", self, "_update_palette");
+		if scene_map.is_connected("palette_changed", Callable(self, "_update_palette")):
+			scene_map.disconnect("palette_changed", Callable(self, "_update_palette"));
 		
-		if scene_map.is_connected("cell_size_changed", self, "_update_grid"):
-			scene_map.disconnect("cell_size_changed", self, "_update_grid");
+		if scene_map.is_connected("cell_size_changed", Callable(self, "_update_grid")):
+			scene_map.disconnect("cell_size_changed", Callable(self, "_update_grid"));
 		
-		if scene_map.is_connected("cell_center_changed", self, "_update_grid"):
-			scene_map.disconnect("cell_center_changed", self, "_update_grid");
+		if scene_map.is_connected("cell_center_changed", Callable(self, "_update_grid")):
+			scene_map.disconnect("cell_center_changed", Callable(self, "_update_grid"));
 	
 	scene_map = p_scene_map;
 	
 	if scene_map:
-		if !scene_map.is_connected("palette_changed", self, "_update_palette"):
-			scene_map.connect("palette_changed", self, "_update_palette");
+		if !scene_map.is_connected("palette_changed", Callable(self, "_update_palette")):
+			scene_map.connect("palette_changed", Callable(self, "_update_palette"));
 		
-		if !scene_map.is_connected("cell_size_changed", self, "_update_grid"):
-			scene_map.connect("cell_size_changed", self, "_update_grid");
+		if !scene_map.is_connected("cell_size_changed", Callable(self, "_update_grid")):
+			scene_map.connect("cell_size_changed", Callable(self, "_update_grid"));
 		
-		if !scene_map.is_connected("cell_center_changed", self, "_update_grid"):
-			scene_map.connect("cell_center_changed", self, "_update_grid");
+		if !scene_map.is_connected("cell_center_changed", Callable(self, "_update_grid")):
+			scene_map.connect("cell_center_changed", Callable(self, "_update_grid"));
 		
 		_update_palette(scene_map.palette);
 	else:
 		_update_palette(null);
 
 
-func handle_spatial_input(camera: Camera, event: InputEvent) -> bool:
+func handle_spatial_input(camera: Camera3D, event: InputEvent) -> bool:
 	if !scene_map || !scene_map.palette:
 		return false;
 	
@@ -123,28 +123,28 @@ func handle_spatial_input(camera: Camera, event: InputEvent) -> bool:
 	
 	var click_event := event as InputEventMouseButton;
 	if click_event:
-		if click_event.button_index == BUTTON_WHEEL_UP && click_event.shift:
+		if click_event.button_index == MOUSE_BUTTON_WHEEL_UP && Input.is_key_pressed(KEY_SHIFT):
 			if click_event.pressed:
 				floor_control.value += click_event.factor;
 			return true;
-		elif click_event.button_index == BUTTON_WHEEL_DOWN && click_event.shift:
+		elif click_event.button_index == MOUSE_BUTTON_WHEEL_DOWN && Input.is_key_pressed(KEY_SHIFT):
 			if click_event.pressed:
 				floor_control.value -= click_event.factor;
 			return true;
 		
 		if click_event.pressed:
-			if click_event.button_index == BUTTON_LEFT:
+			if click_event.button_index == MOUSE_BUTTON_LEFT:
 				current_input_action = InputAction.Paint;
-			elif click_event.button_index == BUTTON_RIGHT:
+			elif click_event.button_index == MOUSE_BUTTON_RIGHT:
 				current_input_action = InputAction.Erase;
 			else:
 				return false;
 			
 			return _handle_input(camera, click_event.position);
 		else:
-			if (click_event.button_index == BUTTON_LEFT && current_input_action == InputAction.Paint) \
-			|| (click_event.button_index == BUTTON_RIGHT && current_input_action == InputAction.Erase):
-				if !changed_items.empty():
+			if (click_event.button_index == MOUSE_BUTTON_LEFT && current_input_action == InputAction.Paint) \
+			|| (click_event.button_index == MOUSE_BUTTON_RIGHT && current_input_action == InputAction.Erase):
+				if !changed_items.is_empty():
 					var action := "SceneMap Paint" if current_input_action == InputAction.Paint else "SceneMap Erase";
 					undo_redo.create_action(action);
 					
@@ -170,7 +170,7 @@ func handle_spatial_input(camera: Camera, event: InputEvent) -> bool:
 	return false;
 
 
-func _handle_input(camera: Camera, point: Vector2) -> bool:
+func _handle_input(camera: Camera3D, point: Vector2) -> bool:
 	if !cursor:
 		return false;
 	
@@ -180,8 +180,8 @@ func _handle_input(camera: Camera, point: Vector2) -> bool:
 
 	# Convert from global space to the local space of the scene map.
 	var to_local_transform = scene_map.global_transform.affine_inverse();
-	from = to_local_transform.xform(from);
-	normal = to_local_transform.basis.xform(normal).normalized();
+	from = to_local_transform * (from);
+	normal = to_local_transform.basis * (normal).normalized();
 	
 	var plane := Plane();
 	plane.normal[edit_axis] = 1.0;
@@ -193,7 +193,7 @@ func _handle_input(camera: Camera, point: Vector2) -> bool:
 	
 	# Make sure the point is still visible by the camera to avoid painting on areas outside of the camera's view.
 	for frustum_plane in frustum:
-		var local_plane := to_local_transform.xform(frustum_plane) as Plane;
+		var local_plane := to_local_transform * (frustum_plane) as Plane;
 		if local_plane.is_point_over(hit):
 			return false;
 
@@ -215,7 +215,7 @@ func _handle_input(camera: Camera, point: Vector2) -> bool:
 			change.old_item = scene_map.get_cell_item_id(cell);
 			change.old_orientation = scene_map.get_cell_item_orientation(cell);
 			change.new_item = selected_item_id;
-			change.new_orientation = cursor_rotation.get_rotation_quat();
+			change.new_orientation = cursor_rotation.get_rotation_quaternion();
 			changed_items.append(change);
 			
 			scene_map.set_cell_item(change.coordinates, change.new_item, change.new_orientation);
@@ -226,7 +226,7 @@ func _handle_input(camera: Camera, point: Vector2) -> bool:
 			change.old_item = scene_map.get_cell_item_id(cell);
 			change.old_orientation = scene_map.get_cell_item_orientation(cell);
 			change.new_item = -1;
-			change.new_orientation = Quat.IDENTITY;
+			change.new_orientation = Quaternion.IDENTITY;
 			changed_items.append(change);
 			
 			scene_map.set_cell_item(change.coordinates, change.new_item, change.new_orientation);
@@ -236,7 +236,7 @@ func _handle_input(camera: Camera, point: Vector2) -> bool:
 
 
 func _update_cursor_transform() -> void:
-	var transform := Transform(cursor_rotation);
+	var transform := Transform3D(cursor_rotation);
 	transform.origin = cursor_origin;
 	transform = scene_map.global_transform * transform;
 	
@@ -245,7 +245,7 @@ func _update_cursor_transform() -> void:
 
 
 func _update_edit_grid_transform() -> void:
-	var transform := Transform();
+	var transform := Transform3D();
 	transform.origin = cursor_origin;
 	transform = scene_map.global_transform * transform;
 
@@ -261,7 +261,7 @@ func _update_cursor_instance() -> void:
 	if selected_item_id >= 0 && scene_map && scene_map.palette:
 		var scene := scene_map.palette.get_item_scene(selected_item_id);
 		if scene:
-			cursor = scene.instance();
+			cursor = scene.instantiate();
 			cursor.name = "Cursor";
 			self.add_child(cursor);
 		
@@ -305,10 +305,10 @@ func _update_palette(palette: ScenePalette) -> void:
 	var previewer := plugin.get_editor_interface().get_resource_previewer();
 	for item_id in palette.get_item_ids():
 		var name := palette.get_item_name(item_id);
-		if !name || name.empty():
+		if !name || name.is_empty():
 			name = "#%s" % item_count;
 		
-		if !search_text.empty() && !search_text.is_subsequence_ofi(name):
+		if !search_text.is_empty() && !search_text.is_subsequence_of(name):
 			continue;
 		
 		if last_selected_id == item_id:
@@ -316,7 +316,7 @@ func _update_palette(palette: ScenePalette) -> void:
 		
 		palette_list.add_item(name);
 		palette_list.set_item_metadata(item_count, item_id);
-		palette_list.set_item_icon(item_count, get_icon("PackedScene", "EditorIcons"));
+		palette_list.set_item_icon(item_count, EditorInterface.get_editor_theme().get_icon("PackedScene", "EditorIcons"));
 		
 		var scene := palette.get_item_scene(item_id);
 		if scene:
@@ -399,16 +399,16 @@ func _set_display_mode(mode: int) -> void:
 	
 	match display_mode:
 		PaletteDisplayMode.Thumbnail:
-			thumbnail_button.pressed = true;
-			list_button.pressed = false;
+			thumbnail_button.button_pressed = true;
+			list_button.button_pressed = false;
 		PaletteDisplayMode.List:
-			thumbnail_button.pressed = false;
-			list_button.pressed = true;
+			thumbnail_button.button_pressed = false;
+			list_button.button_pressed = true;
 	
 	_update_palette(scene_map.palette);
 
 
-func _thumbnail_result(path: String, preview: Texture, small_preview: Texture, user_data: int) -> void:
+func _thumbnail_result(path: String, preview: Texture2D, small_preview: Texture2D, user_data: int) -> void:
 	if !preview:
 		return;
 	
@@ -473,7 +473,7 @@ func _update_grid() -> void:
 				surface_tool.add_vertex(Vector3(i, radius, 0) + offset);
 	
 	var mesh := surface_tool.commit();
-	edit_grid = MeshInstance.new();
+	edit_grid = MeshInstance3D.new();
 	edit_grid.mesh = mesh;
 	edit_grid.layers = 1 << 25;
 	self.add_child(edit_grid);
@@ -484,6 +484,6 @@ func _update_grid() -> void:
 class ChangeItem:
 	var coordinates: Vector3;
 	var new_item: int;
-	var new_orientation: Quat;
+	var new_orientation: Quaternion;
 	var old_item: int;
-	var old_orientation: Quat;
+	var old_orientation: Quaternion;

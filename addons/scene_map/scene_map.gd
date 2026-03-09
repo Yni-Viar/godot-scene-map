@@ -1,7 +1,7 @@
-tool
-class_name SceneMap, "scene_map.svg"
-extends Spatial
-
+@tool
+@icon("scene_map.svg")
+extends Node3D
+class_name SceneMap
 
 const ScenePalette = preload("scene_palette.gd");
 const INVALID_CELL_ITEM = -1;
@@ -13,19 +13,19 @@ signal cell_center_changed;
 
 
 # Palette containing scenes that should be instanced in this grid.
-var palette: ScenePalette = ScenePalette.new() setget _set_palette;
+var palette: ScenePalette = ScenePalette.new(): set = _set_palette
 
 # Size of each cell in the grid.  Should match the size of the scenes in the attached palette.
-var cell_size: Vector3 = Vector3(2, 2, 2) setget _set_cell_size;
+var cell_size: Vector3 = Vector3(2, 2, 2): set = _set_cell_size
 
 # If true, scenes are centered within the cell on the X axis.  Otherwise, they will start at X = 0 within the cell.
-var cell_center_x: bool = true setget _set_cell_center_x;
+var cell_center_x: bool = true: set = _set_cell_center_x
 
 # If true, scenes are centered within the cell on the Y axis.  Otherwise, they will start at Y = 0 within the cell.
-var cell_center_y: bool = true setget _set_cell_center_y;
+var cell_center_y: bool = true: set = _set_cell_center_y
 
 # If true, scenes are centered within the cell on the Z axis.  Otherwise, they will start at Z = 0 within the cell.
-var cell_center_z: bool = true setget _set_cell_center_z;
+var cell_center_z: bool = true: set = _set_cell_center_z
 
 # Contains a sparse collection of filled cells with the Id of the scene in the palette.
 # key: Vector3
@@ -81,13 +81,13 @@ func _get_property_list() -> Array:
 
 func _set_palette(value: ScenePalette) -> void:
 	if palette != value:
-		if palette && palette.is_connected("changed", self, "_on_palette_changed"):
-			palette.disconnect("changed", self, "_on_palette_changed");
+		if palette && palette.is_connected("changed", Callable(self, "_on_palette_changed")):
+			palette.disconnect("changed", Callable(self, "_on_palette_changed"));
 		
 		palette = value;
 		
-		if palette && !palette.is_connected("changed", self, "_on_palette_changed"):
-			palette.connect("changed", self, "_on_palette_changed");
+		if palette && !palette.is_connected("changed", Callable(self, "_on_palette_changed")):
+			palette.connect("changed", Callable(self, "_on_palette_changed"));
 		
 		_on_palette_changed();
 
@@ -127,8 +127,8 @@ func _set_cell_center_z(value: bool) -> void:
 # @param p_item_id ID of the scene to place at this cell.
 # @param p_orientation Quaternion specifying how the item is oriented.
 # @returns True if the item was removed or placed, false if item was already present when placing.
-func set_cell_item(p_coordinate: Vector3, p_item_id: int, p_orientation: Quat = Quat.IDENTITY) -> bool:
-	var coordinate = p_coordinate.floor();
+func set_cell_item(p_coordinate: Vector3, p_item_id: int, p_orientation: Quaternion = Quaternion.IDENTITY) -> bool:
+	var coordinate = p_coordinate.floor()
 	
 	if get_cell_item_id(coordinate) == p_item_id && get_cell_item_orientation(coordinate).is_equal_approx(p_orientation):
 		return false;
@@ -158,14 +158,14 @@ func get_cell_item_id(p_coordinate: Vector3) -> int:
 # Gets the saved orientation of the item at the indicated coordinates.
 # @param p_coordinate Vector3 specifying the x, y, and z coordinates of the cell.
 # @returns Quaternion specifying how the item is oriented.
-func get_cell_item_orientation(p_coordinate: Vector3) -> Quat:
+func get_cell_item_orientation(p_coordinate: Vector3) -> Quaternion:
 	var coordinate = p_coordinate.floor();
 	
 	if cell_map.has(coordinate):
 		var data := cell_map.get(coordinate) as Dictionary;
 		return data.orientation;
 	
-	return Quat.IDENTITY;
+	return Quaternion.IDENTITY;
 
 
 # Gets the position of the cell in relation to this SceneMap.
@@ -196,9 +196,9 @@ func _request_layout() -> void:
 func _layout() -> void:
 	for coordinate in cell_map:
 		var data := cell_map.get(coordinate) as Dictionary;
-		var spatial := get_node(data.path) as Spatial;
+		var spatial := get_node(data.path) as Node3D;
 		if spatial:
-			spatial.translation = get_cell_position(coordinate);
+			spatial.position = get_cell_position(coordinate);
 	
 	layout_pending = false;
 
@@ -218,20 +218,20 @@ func _remove_instance(coordinate: Vector3) -> bool:
 	return true;
 
 
-func _place_instance(coordinate: Vector3, item_id: int, orientation: Quat) -> bool:
+func _place_instance(coordinate: Vector3, item_id: int, orientation: Quaternion) -> bool:
 	var scene := palette.get_item_scene(item_id);
 	if !scene:
 		push_error("Missing scene for item %s at cell %s" % [item_id, coordinate]);
 		return false;
 	
-	var node := scene.instance(PackedScene.GEN_EDIT_STATE_INSTANCE if Engine.editor_hint else PackedScene.GEN_EDIT_STATE_DISABLED);
+	var node := scene.instantiate(PackedScene.GEN_EDIT_STATE_INSTANCE if Engine.is_editor_hint() else PackedScene.GEN_EDIT_STATE_DISABLED);
 	var item_name := palette.get_item_name(item_id);
 	if item_name:
 		node.name = item_name;
 	
-	var spatial := node as Spatial;
+	var spatial := node as Node3D;
 	if spatial:
-		spatial.transform = Transform(Basis(orientation), get_cell_position(coordinate));
+		spatial.transform = Transform3D(Basis(orientation), get_cell_position(coordinate));
 	
 	self.add_child(node, true);
 	
@@ -257,7 +257,7 @@ func _rebuild() -> void:
 	for cell in cells:
 		var data := cell_map.get(cell) as Dictionary;
 		var item_id := data.itemId as int;
-		var orientation := data.orientation as Quat;
+		var orientation := data.orientation as Quaternion;
 		
 		_remove_instance(cell);
 		_place_instance(cell, item_id, orientation);

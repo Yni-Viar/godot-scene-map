@@ -26,14 +26,14 @@ func parse_property(object: Object, type: int, path: String, hint: int, hint_tex
 			"add_item":
 				var add_button := Button.new();
 				add_button.text = tr("Add Item");
-				add_button.connect("pressed", palette, "create_item", [ item_id ]);
+				add_button.connect("pressed", Callable(palette, "create_item").bind(item_id));
 				add_custom_control(add_button);
 				
 				return true;
 			"remove_item":
 				var remove_button := Button.new();
 				remove_button.text = tr("Remove Item");
-				remove_button.connect("pressed", palette, "remove_item", [ item_id ]);
+				remove_button.connect("pressed", Callable(palette, "remove_item").bind(item_id));
 				add_custom_control(remove_button);
 				return true;
 	
